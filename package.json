@@ -1,0 +1,28 @@
+{
+  "name": "kratos",
+  "version": "1.0.0",
+  "description": "node goodies",
+  "main": "index.js",
+  "scripts": {
+    "cz": "git-cz",
+    "precommit": "./gradlew spotlessApply",
+    "prepush": "./gradlew detektCheck",
+    "commitmsg": "commitlint -e $GIT_PARAMS",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PadreCaballo/kratos.git"
+  },
+  "author": "PadreCaballo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PadreCaballo/kratos/issues"
+  },
+  "homepage": "https://github.com/PadreCaballo/kratos#readme",
+  "devDependencies": {
+    "@commitlint/cli": "7.0.0",
+    "commitizen": "2.10.1",
+    "husky": "0.14.3"
+  }
+}
