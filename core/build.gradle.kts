@@ -22,8 +22,45 @@
 * SOFTWARE.
 */
 
+import de.undercouch.gradle.tasks.download.Download
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
+    base
+    java
     kotlin("jvm")
+    id("de.undercouch.download") version "3.4.3"
+}
+
+apply {
+    base
+    java
+    plugin("de.undercouch.download")
 }
 
 kotlinProject()
+
+configure<JavaPluginConvention> {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+dependencies {
+    compile(kotlin("stdlib"))
+    compile("com.beust", "klaxon", "3.0.1")
+    compile("com.squareup", "kotlinpoet", "1.0.0-RC1")
+
+    testCompile("io.github.benas", "random-beans", "3.7.0")
+    testCompile("org.junit.jupiter", "junit-jupiter-params", "5.2.0")
+    testCompile(kotlin("test-junit5"))
+    testImplementation("io.mockk", "mockk", "1.8.5")
+}
+
+val downloadCloudFormationSpec by tasks.creating(Download::class) {
+    src("https://d1uauaxba7bl26.cloudfront.net/latest/gzip/CloudFormationResourceSpecification.json")
+    dest("$projectDir/src/main/resources/cf-spec.json")
+    onlyIfModified(true)
+}
