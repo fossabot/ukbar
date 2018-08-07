@@ -27,3 +27,13 @@ plugins {
 }
 
 kotlinProject()
+
+dependencies {
+    compile(kotlin("stdlib"))
+    compile(project(":core"))
+
+    testCompile(kotlin("test-junit5"))
+    testCompile("com.natpryce", "hamkrest", "1.4.2.2")
+    testCompile("io.github.benas", "random-beans", "3.7.0")
+    testImplementation("io.mockk", "mockk", "1.8.5")
+}
