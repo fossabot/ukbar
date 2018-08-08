@@ -25,8 +25,8 @@ import org.jetbrains.kotlin.ir.backend.js.compile
 
 buildscript {
     repositories {
-        mavenCentral()
         jcenter()
+        mavenCentral()
     }
 }
 

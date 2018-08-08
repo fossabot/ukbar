@@ -56,7 +56,7 @@ class TypeMapper {
                 "Missing type property in JSON Object"
             }
 
-            when (property["Type"]) {
+            return when (property["Type"]) {
 
                 "List" -> {
 
@@ -65,7 +65,7 @@ class TypeMapper {
                         "Cannot have a parameter type List without a PrimitiveItemType or ItemType property"
                     }
 
-                    return if (property.containsKey("PrimitiveItemType")) {
+                    if (property.containsKey("PrimitiveItemType")) {
                         val primitiveItemTypeKey = property["PrimitiveItemType"]
                         val primitiveItemType = primitiveTypeMap[primitiveItemTypeKey]
 
@@ -78,9 +78,9 @@ class TypeMapper {
                     }
                 }
 
-                "Map" -> return Map::class.asClassName()
+                "Map" -> Map::class.asClassName()
 
-                else -> return ClassName("com.ukbar", property["Type"] as String)
+                else -> ClassName("com.ukbar", property["Type"] as String)
             }
         }
     }

@@ -32,6 +32,7 @@ import java.io.File
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+
 class GeneratorIT {
 
     private val cfSpecFilepath = javaClass.getResource("/cf-spec.json").path
