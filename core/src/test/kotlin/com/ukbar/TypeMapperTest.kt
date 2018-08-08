@@ -5,9 +5,9 @@ package com.ukbar
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.asClassName
 import io.mockk.spyk
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -18,31 +18,31 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 @Nested
-open class GeneratorTest {
+open class TypeMapperTest {
 
     protected val parser = spyk<Parser>()
-    protected val generator = Generator(parser)
     protected val propertyBuilder = StringBuilder()
+    protected val mapper = TypeMapper()
 
-    class transformType: GeneratorTest() {
+    class transformType : TypeMapperTest() {
 
         @ParameterizedTest
         @MethodSource("primitiveTypes")
-        fun `can transform primitive types to kotlin native types`(
+        fun `can transform primitive types to respective KotlinPoet TypeNames`(
                 primitiveType: String,
                 expectedType: TypeName
         ) {
             propertyBuilder.append("{\"PrimitiveType\": \"$primitiveType\"}")
 
             val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
-            val actualType = generator.transformType(propertyJsonObject)
+            val actualType = mapper.mapProperty(propertyJsonObject)
 
             assertEquals(expectedType, actualType)
         }
 
         @ParameterizedTest
         @MethodSource("listTypes")
-        fun `can transform list type to kotlin list of primitive types`(
+        fun `can transform list of primitive types to KotlinPoet list TypeName parameterized by primitive types`(
                 primitiveItemType: String,
                 expectedType: TypeName
         ) {
@@ -52,13 +52,13 @@ open class GeneratorTest {
             propertyBuilder.append("}")
 
             val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
-            val actualType = generator.transformType(propertyJsonObject)
+            val actualType = mapper.mapProperty(propertyJsonObject)
 
             assertEquals(expectedType, actualType)
         }
 
         @Test
-        fun `can transform list type to kotlin list of `() {
+        fun `can transform list of non primitive types to KotlinPoet list TypeName parameterized by the non primitive type`() {
             propertyBuilder.append("{")
             propertyBuilder.append("\"Type\": \"List\"")
             propertyBuilder.append("\"ItemType\": \"Action\"")
@@ -69,13 +69,13 @@ open class GeneratorTest {
             val expectedType = listClassName.parameterizedBy(itemTypeClassname)
 
             val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
-            val actualType = generator.transformType(propertyJsonObject)
+            val actualType = mapper.mapProperty(propertyJsonObject)
 
             assertEquals(expectedType, actualType)
         }
 
         @Test
-        fun `can transform map type to kotlin map`() {
+        fun `can transform map type to KotlinPoet Map TypeName`() {
             propertyBuilder.append("{")
             propertyBuilder.append("\"Type\": \"Map\"")
             propertyBuilder.append("}")
@@ -83,14 +83,28 @@ open class GeneratorTest {
             val expectedType = Map::class.asClassName()
 
             val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
-            val actualType = generator.transformType(propertyJsonObject)
+            val actualType = mapper.mapProperty(propertyJsonObject)
+
+            assertEquals(expectedType, actualType)
+        }
+
+        @Test
+        fun `can transform any non primitive type to KotlinPoet TypeName`() {
+            propertyBuilder.append("{")
+            propertyBuilder.append("\"Type\": \"FieldToMatch\"")
+            propertyBuilder.append("}")
+
+            val expectedType = ClassName("com.ukbar", "FieldToMatch")
+
+            val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
+            val actualType = mapper.mapProperty(propertyJsonObject)
 
             assertEquals(expectedType, actualType)
         }
 
         @Test
         fun `should fail if parameter object has List property but no PrimitiveItemType or ItemType property`() {
-            val expectedMessage = "Cannot have a parameter type List without a PrimitiveItemType property"
+            val expectedMessage = "Cannot have a parameter type List without a PrimitiveItemType or ItemType property"
 
             val exception = assertFailsWith<IllegalArgumentException> {
                 propertyBuilder.append("{")
@@ -98,7 +112,21 @@ open class GeneratorTest {
                 propertyBuilder.append("}")
 
                 val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
-                generator.transformType(propertyJsonObject)
+                mapper.mapProperty(propertyJsonObject)
+            }
+
+            assertEquals(expectedMessage, exception.message)
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when json parameter does not have a type property`() {
+            val expectedMessage = "Missing type property in JSON Object"
+
+            val exception = assertFailsWith<IllegalArgumentException> {
+                propertyBuilder.append("{}")
+
+                val propertyJsonObject = parser.parse(propertyBuilder) as JsonObject
+                mapper.mapProperty(propertyJsonObject)
             }
 
             assertEquals(expectedMessage, exception.message)
@@ -127,7 +155,6 @@ open class GeneratorTest {
                     Arguments.of("Json", ClassName("kotlin.collections", "List").parameterizedBy(ClassName("kotlin.collections", "Map") as TypeName))
             )
         }
-
     }
 
 }
