@@ -1,3 +1,27 @@
+/*
+* MIT License
+*
+* Copyright (c) 2018 Miguel Hernández
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
+
 package com.ukbar
 
 import com.beust.klaxon.JsonObject
@@ -6,26 +30,13 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
 import java.io.File
-import kotlin.reflect.KClass
 
 class Generator constructor(
-        private val parser: Parser
-){
-
-    private val primitiveTypeMap = mapOf<String, KClass<*>>(
-            "String" to String::class,
-            "Integer" to Int::class,
-            "Boolean" to Boolean::class,
-            "Double" to Double::class,
-            "Long" to Long::class,
-            "Timestamp" to String::class,
-            "Json" to Map::class
-    )
+    private val parser: Parser,
+    private val typeMapper: TypeMapper
+) {
 
     fun processFile(filepath: String): JsonObject {
         val cfSpecInputStream = File(filepath).inputStream()
@@ -33,27 +44,32 @@ class Generator constructor(
     }
 
     fun createPropertyClass(cfSpec: JsonObject, packageName: String, filepath: File) {
-        val propertiesTypes = cfSpec["PropertyType"] as JsonObject
+        val propertyTypesJson = cfSpec["PropertyTypes"] as JsonObject
 
-        propertiesTypes
+        propertyTypesJson
                 .keys
                 .forEach { resource ->
                     val classnameStr = resource.substringAfterLast(".")
                     val classname = ClassName(packageName, classnameStr)
 
-                    val properties = propertiesTypes[resource] as JsonObject
+                    val resourceEntry = propertyTypesJson[resource] as JsonObject
+                    val resourceProperties = resourceEntry["Properties"] as JsonObject
 
-                    createKotlinFile(classname, properties)
+                    createDataClass(classname, resourceProperties)
                 }
     }
 
-    private fun createKotlinFile(classname: ClassName, properties: JsonObject) {
+    private fun createDataClass(classname: ClassName, properties: JsonObject) {
 
         val dataClassConstructorBuilder = FunSpec.constructorBuilder()
 
-//        properties.forEach { property ->
-//            dataClassConstructorBuilder.addParameter(property)
-//        }
+        properties.keys.forEach { propertyKey ->
+            val property = properties[propertyKey]
+            val mappedType = typeMapper.mapProperty(property as JsonObject)
+
+            dataClassConstructorBuilder
+                    .addParameter(propertyKey.decapitalize(), mappedType)
+        }
 
         val dataClassTypeSpecBuilder = TypeSpec.classBuilder(classname)
                 .addModifiers(KModifier.DATA)
@@ -62,47 +78,8 @@ class Generator constructor(
         val file = FileSpec
                 .builder(packageName = classname.packageName, fileName = classname.simpleName)
                 .addType(dataClassTypeSpecBuilder.build())
-    }
 
-    fun transformType(value: JsonObject): TypeName {
-
-        val primitiveType = value["PrimitiveType"]
-
-        if (value.containsKey("PrimitiveType")) {
-            val type = primitiveTypeMap[primitiveType]
-            return type!!.asClassName()
-        }
-
-        if (value.containsKey("Type")) {
-
-            when(value["Type"]) {
-
-                "List" -> {
-
-                    if (value.containsKey("PrimitiveItemType")) {
-                        val primitiveItemTypeString = value["PrimitiveItemType"]
-                        val primitiveItemType = primitiveTypeMap[primitiveItemTypeString]
-
-                        return List::class.parameterizedBy(primitiveItemType!!)
-                    }
-
-                    else if (value.containsKey("ItemType")) {
-                        val itemTypeString = value["ItemType"] as String
-                        val itemType = ClassName("com.ukbar", itemTypeString)
-
-                        return List::class.asClassName().parameterizedBy(itemType)
-                    }
-
-                    throw IllegalArgumentException("Cannot have a parameter type List without a PrimitiveItemType property")
-                }
-
-                "Map" -> {
-                    return Map::class.asClassName()
-                }
-            }
-        }
-
-        return Any::class.asClassName()
+        file.build().writeTo(System.out)
     }
 
 }
