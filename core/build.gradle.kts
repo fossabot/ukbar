@@ -1,7 +1,7 @@
 /*
 * MIT License
 *
-* Copyright (c) 2018
+* Copyright (c) 2018 Miguel Hernández
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -26,19 +26,12 @@ import de.undercouch.gradle.tasks.download.Download
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    base
-    java
-    kotlin("jvm")
     id("de.undercouch.download") version "3.4.3"
 }
 
 apply {
-    base
-    java
     plugin("de.undercouch.download")
 }
-
-kotlinProject()
 
 configure<JavaPluginConvention> {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -49,7 +42,6 @@ tasks.withType<KotlinCompile> {
 }
 
 dependencies {
-    compile(kotlin("stdlib"))
     compile("com.beust", "klaxon", "3.0.1")
     compile("com.squareup", "kotlinpoet", "1.0.0-RC1")
 

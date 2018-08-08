@@ -25,85 +25,74 @@ import org.jetbrains.kotlin.ir.backend.js.compile
 
 buildscript {
     repositories {
-        jcenter()
         mavenCentral()
-        mavenLocal()
+        jcenter()
     }
 }
 
 plugins {
     base
     java
-    kotlin("jvm") version "1.2.60"
+    kotlin("jvm") version "1.2.51"
     `maven-publish`
 
-    id("com.diffplug.gradle.spotless") version "3.13.0"
-    id("io.gitlab.arturbosch.detekt") version "1.0.0.RC7-3"
-}
-
-group = "com.ukbar"
-
-version = "1.0"
-
-allprojects {
-    repositories {
-        jcenter()
-    }
-}
-
-apply {
-    plugin("kotlin")
-    plugin("com.diffplug.gradle.spotless")
-    plugin("org.gradle.maven-publish")
+    id("com.diffplug.gradle.spotless") version "3.14.0"
+    id("io.gitlab.arturbosch.detekt") version "1.0.0.RC8"
 }
 
 subprojects {
+
+    group = "com.ukbar"
+
+    version = "1.0"
+
+    apply {
+        plugin("kotlin")
+        plugin("com.diffplug.gradle.spotless")
+        plugin("org.gradle.maven-publish")
+    }
+
     repositories {
-        jcenter()
-        mavenLocal()
         mavenCentral()
-    }
-}
-
-spotless {
-    kotlin {
-        ktlint()
-
-        licenseHeaderFile(rootProject.file("LICENSE"))
+        jcenter()
     }
 
-    kotlinGradle {
-        ktlint()
+    spotless {
+        kotlin {
+            ktlint()
 
-        licenseHeaderFile(rootProject.file("LICENSE"),
-                "(import|rootProject|dependencies|plugins|apply|include)")
-    }
-}
+            licenseHeaderFile(rootProject.file("LICENSE"))
+        }
 
-dependencies {
-    compile(kotlin("stdlib"))
+        kotlinGradle {
+            ktlint()
 
-    subprojects.forEach {
-        archives(it)
-    }
-}
-
-val sourcesJar by tasks.creating(Jar::class) {
-    classifier = "sources"
-    from(java.sourceSets["main"].allSource)
-}
-
-publishing {
-
-    repositories {
-        maven {
+            licenseHeaderFile(rootProject.file("LICENSE"),
+                    "(import|rootProject|dependencies|plugins|apply|include)")
         }
     }
 
-    (publications) {
-        "mavenJava"(MavenPublication::class) {
-            from(components["java"])
-            artifact(sourcesJar)
+    dependencies {
+        compile(kotlin("stdlib-jdk8"))
+    }
+
+    val sourcesJar by tasks.creating(Jar::class) {
+        classifier = "sources"
+        from(java.sourceSets["main"].allSource)
+    }
+
+    publishing {
+
+        repositories {
+            maven {
+            }
+        }
+
+        (publications) {
+            "mavenJava"(MavenPublication::class) {
+                from(components["java"])
+                artifact(sourcesJar)
+            }
         }
     }
 }
