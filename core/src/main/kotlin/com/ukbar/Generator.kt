@@ -81,5 +81,4 @@ class Generator constructor(
 
         file.build().writeTo(System.out)
     }
-
 }
