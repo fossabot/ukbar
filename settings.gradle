@@ -1,4 +1,3 @@
 include 'it'
 include 'core'
-include 'aws'
 
